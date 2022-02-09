@@ -276,62 +276,6 @@ export class CapeObject extends Group {
 	}
 }
 
-export class HatObject extends Group {
-	//readonly hat: Mesh;
-
-	constructor(texture: Texture, json: any) {
-		super();
-
-		//const elements = json.elements;
-		//if (!elements.length) throw new Error("invalid json model");
-
-		const hatMaterial = new MeshStandardMaterial({
-			map: texture,
-			side: DoubleSide,
-			transparent: true,
-			alphaTest: 1e-5
-		});
-
-		function getSmaller(x: any, y: any) {
-			return x > y ? y : x;
-		}
-
-		console.log("got model", json);
-		if (json && json.elements) {
-			for (var i = 0; i < json.elements.length; i++) {
-				var element = json.elements[i];
-				console.log("found element:", element);
-				var xDif = element.to[0] - element.from[0];
-				var yDif = element.to[1] - element.from[1];
-				var zDif = element.to[2] - element.from[2];
-				var xPos = element.from[0];
-				var yPos = element.from[1];
-				var zPos = element.from[2];
-				//if (xDif < 0) xPos += xDif;
-				//if (yDif < 0) yPos += yDif;
-				if (zDif < 0) zPos += zDif;
-				//console.log(xPos, yPos, zPos);
-				console.log(xDif, yDif, zDif);
-				
-				var box = new BoxGeometry(Math.abs(zDif), Math.abs(yDif), Math.abs(zDif));
-				setUVs(box, 0, 0, 5, 5, 5, 32, 32);
-				var mesh = new Mesh(box, hatMaterial);
-				mesh.position.x = xPos / 4;
-				mesh.position.y = yPos / 4;
-				mesh.position.z = zPos / 4;
-				this.add(mesh);
-			}
-		}
-
-		/*const hatBox = new BoxGeometry(10, 10, 10);
-		setUVs(hatBox, 0, 0, 5, 5, 5, 32, 32);
-		this.hat = new Mesh(hatBox, hatMaterial);
-		this.hat.position.y = -8;
-		this.hat.position.z = 0.5;
-		this.add(this.hat);*/
-	}
-}
-
 export class ElytraObject extends Group {
 
 	readonly leftWing: Group;
@@ -423,9 +367,8 @@ export class PlayerObject extends Group {
 	readonly cape: CapeObject;
 	readonly elytra: ElytraObject;
 	readonly ears: EarsObject;
-	readonly hat: HatObject;
 
-	constructor(skinTexture: Texture, capeTexture: Texture, hatTexture: Texture, hatModel: any, earsTexture: Texture) {
+	constructor(skinTexture: Texture, capeTexture: Texture, earsTexture: Texture) {
 		super();
 
 		this.skin = new SkinObject(skinTexture);
@@ -454,13 +397,6 @@ export class PlayerObject extends Group {
 		this.ears.position.z = 2 / 3;
 		this.ears.visible = false;
 		this.skin.head.add(this.ears);
-
-		this.hat = new HatObject(hatTexture, hatModel);
-		this.hat.name = "hat";
-		this.hat.position.y = 16;
-		//this.hat.rotation.x = 10.8 * Math.PI / 180;
-		//this.hat.rotation.y = Math.PI;
-		this.add(this.hat);
 	}
 
 	get backEquipment(): BackEquipment | null {
@@ -476,9 +412,5 @@ export class PlayerObject extends Group {
 	set backEquipment(value: BackEquipment | null) {
 		this.cape.visible = value === "cape";
 		this.elytra.visible = value === "elytra";
-	}
-
-	set setHat(value: Texture | null) {
-		this.hat.visible = true;
 	}
 }

@@ -1,4 +1,4 @@
-import { inferModelType, isTextureSource, loadCapeToCanvas, loadCustomModelToCanvas, loadEarsToCanvas, loadEarsToCanvasFromSkin, loadImage, loadSkinToCanvas, ModelType, RemoteImage, TextureSource } from "skinview-utils";
+import { inferModelType, isTextureSource, loadCapeToCanvas, loadEarsToCanvas, loadEarsToCanvasFromSkin, loadImage, loadSkinToCanvas, ModelType, RemoteImage, TextureSource } from "skinview-utils";
 import { Color, ColorRepresentation, PointLight, EquirectangularReflectionMapping, Group, NearestFilter, PerspectiveCamera, Scene, Texture, Vector2, WebGLRenderer, AmbientLight, Mapping } from "three";
 import { RootAnimation } from "./animation.js";
 import { BackEquipment, PlayerObject } from "./model.js";
@@ -33,10 +33,6 @@ export interface CapeLoadOptions extends LoadOptions {
 	backEquipment?: BackEquipment;
 }
 
-export interface CustomModelOptions extends LoadOptions {
-	
-}
-
 export interface EarsLoadOptions extends LoadOptions {
 	/**
 	 * "standalone": The texture is a 14x7 image that only contains the ears;
@@ -52,8 +48,6 @@ export interface SkinViewerOptions {
 	skin?: RemoteImage | TextureSource;
 	model?: ModelType | "auto-detect";
 	cape?: RemoteImage | TextureSource;
-	hatTexture?: RemoteImage | TextureSource; 
-	hatModel?: any;
 
 	/**
 	 * If you want to show the ears drawn on the current skin, set this to "current-skin".
@@ -126,15 +120,10 @@ export class SkinViewer {
 
 	readonly skinCanvas: HTMLCanvasElement;
 	readonly capeCanvas: HTMLCanvasElement;
-	readonly hatCanvas: HTMLCanvasElement;
 	readonly earsCanvas: HTMLCanvasElement;
 	private readonly skinTexture: Texture;
 	private readonly capeTexture: Texture;
-	private readonly hatTexture: Texture;
 	private readonly earsTexture: Texture;
-
-	private hatModel: any;
-
 	private backgroundTexture: Texture | null = null;
 
 	private _disposed: boolean = false;
@@ -159,13 +148,6 @@ export class SkinViewer {
 		this.capeTexture.magFilter = NearestFilter;
 		this.capeTexture.minFilter = NearestFilter;
 
-		this.hatCanvas = document.createElement("canvas");
-		this.hatTexture = new Texture(this.hatCanvas);
-		this.hatTexture.magFilter = NearestFilter;
-		this.hatTexture.minFilter = NearestFilter;
-
-		this.hatModel = options.hatModel;
-
 		this.earsCanvas = document.createElement("canvas");
 		this.earsTexture = new Texture(this.earsCanvas);
 		this.earsTexture.magFilter = NearestFilter;
@@ -186,11 +168,10 @@ export class SkinViewer {
 		});
 		this.renderer.setPixelRatio(window.devicePixelRatio);
 
-		this.playerObject = new PlayerObject(this.skinTexture, this.capeTexture, this.hatTexture, this.hatModel, this.earsTexture);
+		this.playerObject = new PlayerObject(this.skinTexture, this.capeTexture, this.earsTexture);
 		this.playerObject.name = "player";
 		this.playerObject.skin.visible = false;
 		this.playerObject.cape.visible = false;
-		this.playerObject.hat.visible = false;
 		this.playerWrapper = new Group();
 		this.playerWrapper.add(this.playerObject);
 		this.scene.add(this.playerWrapper);
@@ -203,9 +184,6 @@ export class SkinViewer {
 		}
 		if (options.cape !== undefined) {
 			this.loadCape(options.cape);
-		}
-		if (options.hatTexture !== undefined) {
-			this.loadHat(options.hatTexture, options.hatModel);
 		}
 		if (options.ears !== undefined && options.ears !== "current-skin") {
 			this.loadEars(options.ears.source, {
@@ -327,39 +305,6 @@ export class SkinViewer {
 		this.playerObject.backEquipment = null;
 	}
 
-	loadHat(empty: null): void;
-	loadHat<S extends TextureSource | RemoteImage>(
-		source: S,
-		options?: CustomModelOptions
-	): S extends TextureSource ? void : Promise<void>;
-
-	loadHat(
-		source: TextureSource | RemoteImage | null,
-		options: CustomModelOptions = {}
-	): void | Promise<void> {
-		console.log("here, loading hat");
-		if (source === null) {
-			this.resetHat();
-
-		} else if (isTextureSource(source)) {
-			console.log("was texture source");
-			console.log(source);
-			console.log(this.capeCanvas);
-			console.log(this.hatCanvas);
-			console.log("using json", this.hatModel);
-			loadCustomModelToCanvas(this.hatCanvas, source);
-			this.hatTexture.needsUpdate = true;
-			this.playerObject.hat.visible = true;
-			console.log("finished loading custom hat");
-		} else {
-			return loadImage(source).then(image => this.loadHat(image, options));
-		}
-	}
-
-	resetHat(): void {
-		this.playerObject.hat.visible = false;
-	}
-
 	loadEars(empty: null): void;
 	loadEars<S extends TextureSource | RemoteImage>(
 		source: S,
@@ -459,7 +404,6 @@ export class SkinViewer {
 		this.renderer.dispose();
 		this.skinTexture.dispose();
 		this.capeTexture.dispose();
-		this.hatTexture.dispose();
 		if (this.backgroundTexture !== null) {
 			this.backgroundTexture.dispose();
 			this.backgroundTexture = null;
