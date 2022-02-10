@@ -276,7 +276,7 @@ export class CapeObject extends Group {
 	}
 }
 
-export class HatObject extends Group {
+export class JsonModelObject extends Group {
 	//readonly hat: Mesh;
 
 	constructor(texture: Texture, json: any) {
@@ -297,6 +297,7 @@ export class HatObject extends Group {
 		}
 
 		console.log("got model", json);
+
 		if (json && json.elements) {
 			for (var i = 0; i < json.elements.length; i++) {
 				var element = json.elements[i];
@@ -309,16 +310,22 @@ export class HatObject extends Group {
 				var zPos = element.from[2];
 				//if (xDif < 0) xPos += xDif;
 				//if (yDif < 0) yPos += yDif;
-				if (zDif < 0) zPos += zDif;
+				//if (zDif < 0) zPos += zDif;
 				//console.log(xPos, yPos, zPos);
-				console.log(xDif, yDif, zDif);
+				//console.log("Size: ", xDif, yDif, zDif, " At: ", xPos, yPos, zPos);
 				
 				var box = new BoxGeometry(Math.abs(xDif), Math.abs(yDif), Math.abs(zDif));
 				setUVs(box, 0, 0, 5, 5, 5, 32, 32);
 				var mesh = new Mesh(box, hatMaterial);
-				mesh.position.x = xPos / 4;
-				mesh.position.y = yPos / 4;
-				mesh.position.z = zPos / 4;
+				mesh.position.x = (xPos+0.5*xDif) / 4;
+				mesh.position.y = (yPos+0.5*yDif) / 4;
+				mesh.position.z = (zPos+0.5*zDif) / 4;
+
+				/*console.log(
+					"Box Dimensions (WHD):", box.parameters.width, box.parameters.height, box.parameters.depth,
+					"Mesh Scale: ", mesh.scale.x, mesh.scale.y, mesh.scale.z,
+					" At: ", mesh.position.x, mesh.position.y, mesh.position.z);*/
+				
 				this.add(mesh);
 			}
 		}
@@ -423,7 +430,7 @@ export class PlayerObject extends Group {
 	readonly cape: CapeObject;
 	readonly elytra: ElytraObject;
 	readonly ears: EarsObject;
-	readonly hat: HatObject;
+	readonly hat: JsonModelObject;
 
 	constructor(skinTexture: Texture, capeTexture: Texture, hatTexture: Texture, hatModel: any, earsTexture: Texture) {
 		super();
@@ -455,9 +462,11 @@ export class PlayerObject extends Group {
 		this.ears.visible = false;
 		this.skin.head.add(this.ears);
 
-		this.hat = new HatObject(hatTexture, hatModel);
+		this.hat = new JsonModelObject(hatTexture, hatModel);
 		this.hat.name = "hat";
-		this.hat.position.y = 16;
+		this.hat.position.y = 17;
+		this.hat.position.x = -2;
+
 		//this.hat.rotation.x = 10.8 * Math.PI / 180;
 		//this.hat.rotation.y = Math.PI;
 		this.add(this.hat);
