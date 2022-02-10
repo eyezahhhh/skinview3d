@@ -1,5 +1,5 @@
 import { ModelType } from "skinview-utils";
-import { BoxGeometry, BufferAttribute, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, Object3D, Texture, Vector2, Vector3 } from "three";
+import { BoxGeometry, BufferAttribute, DoubleSide, FrontSide, Group, Matrix4, Mesh, MeshStandardMaterial, Object3D, Texture, Vector2, Vector3 } from "three";
 
 function setUVs(box: BoxGeometry, u: number, v: number, width: number, height: number, depth: number, textureWidth: number, textureHeight: number): void {
 	const toFaceVertices = (x1: number, y1: number, x2: number, y2: number) => [
@@ -37,7 +37,7 @@ function setCapeUVs(box: BoxGeometry, u: number, v: number, width: number, heigh
 }
 
 function setJsonUVs(box: BoxGeometry, faceUVs: any) {
-	console.log("FaceUVs: ", faceUVs);
+	//console.log("FaceUVs: ", faceUVs);
 
 	const toFaceVertices = (uvs: number[]) => [
 		new Vector2(uvs[0] / 16, 1.0 - uvs[3] / 16),
@@ -344,13 +344,29 @@ export class JsonModelObject extends Group {
 				//console.log("Size: ", xDif, yDif, zDif, " At: ", xPos, yPos, zPos);
 				
 				var box = new BoxGeometry(Math.abs(xDif), Math.abs(yDif), Math.abs(zDif));
+				let hXdif = 0.5*xDif;
+				let hYdif = 0.5*yDif;
+				let hZdif = 0.5*zDif;
+				box.translate(hXdif, hYdif, hZdif); // the box's origin is at the corner.
+				box.translate(xPos, yPos, zPos); // you know what I'm just gonna make the geometry centred at the origin in the bb model
 				setJsonUVs(box, element.faces);
+
 				var mesh = new Mesh(box, hatMaterial);
-				mesh.position.x = xPos + 0.5*xDif;
-				mesh.position.y = yPos + 0.5*yDif;
-				mesh.position.z = zPos + 0.5*zDif;
+
+				/*mesh.position.x = xPos + hXdif;
+				mesh.position.y = yPos + hYdif;
+				mesh.position.z = zPos + hZdif;*/
+
+				/*mesh.position.x = xPos;
+				mesh.position.y = yPos;
+				mesh.position.z = zPos;
+
+				/*mesh.position.x += 0.5*xDif;
+				mesh.position.y += 0.5*yDif;
+				mesh.position.z += 0.5*zDif;*/
 
 				if (element.rotation != undefined) {
+					console.log(element.name, " At Rotation ", element.rotation);
 					let angle: number = element.rotation.angle * Math.PI / 180.0;
 					let axisStr : string = element.rotation.axis;
 					let axis : Vector3;
@@ -375,8 +391,21 @@ export class JsonModelObject extends Group {
 					mesh.position.sub(pivot);
 					mesh.position.applyAxisAngle(axis, angle);
 					mesh.position.add(pivot);
+					
 					mesh.rotateOnAxis(axis, angle);
+
+					// if this is `angle` it's in the right place. if this is `-angle` it has the right rotation. total spain. therefore this monstrosity:
+					// mesh.rotateOnAxis(axis, angle);
+					// let cachedPos: Vector3 = new Vector3().copy(mesh.position);
+					// mesh.rotateOnAxis(axis, -2 * angle);
+					// mesh.position.copy(cachedPos);
+					// console.log("CP ", cachedPos, "MP ", mesh.position);
+
+					/*mesh.matrix.multiply(new Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z));
+					mesh.matrix.multiply(new Matrix4().makeRotationAxis(axis, angle));
+					mesh.matrix.multiply(new Matrix4().makeTranslation(pivot.x, pivot.y, pivot.z));*/
 				}
+
 				/*console.log(
 					"Box Dimensions (WHD):", box.parameters.width, box.parameters.height, box.parameters.depth,
 					"Mesh Scale: ", mesh.scale.x, mesh.scale.y, mesh.scale.z,
