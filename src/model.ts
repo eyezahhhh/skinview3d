@@ -36,6 +36,35 @@ function setCapeUVs(box: BoxGeometry, u: number, v: number, width: number, heigh
 	setUVs(box, u, v, width, height, depth, 64, 32);
 }
 
+function setJsonUVs(box: BoxGeometry, faceUVs: any) {
+	console.log("FaceUVs: ", faceUVs);
+
+	const toFaceVertices = (uvs: number[]) => [
+		new Vector2(uvs[0] / 16, 1.0 - uvs[3] / 16),
+		new Vector2(uvs[2] / 16, 1.0 - uvs[3] / 16),
+		new Vector2(uvs[2] / 16, 1.0 - uvs[1] / 16),
+		new Vector2(uvs[0] / 16, 1.0 - uvs[1] / 16)
+	];
+
+	let nth = toFaceVertices(faceUVs.north.uv);
+	let est = toFaceVertices(faceUVs.east.uv);
+	let sth = toFaceVertices(faceUVs.south.uv);
+	let wst = toFaceVertices(faceUVs.west.uv);
+	let up = toFaceVertices(faceUVs.up.uv);
+	let down = toFaceVertices(faceUVs.down.uv);
+
+	const uvAttr = box.attributes.uv as BufferAttribute;
+	uvAttr.copyVector2sArray([
+		wst[3], wst[2], wst[0], wst[1],
+		est[3], est[2], est[0], est[1],
+		up[3], up[2], up[0], up[1],
+		down[0], down[1], down[3], down[2],
+		nth[3], nth[2], nth[0], nth[1],
+		sth[3], sth[2], sth[0], sth[1]
+	]);
+	uvAttr.needsUpdate = true;
+}
+
 /**
  * Notice that innerLayer and outerLayer may NOT be the direct children of the Group.
  */
@@ -315,11 +344,11 @@ export class JsonModelObject extends Group {
 				//console.log("Size: ", xDif, yDif, zDif, " At: ", xPos, yPos, zPos);
 				
 				var box = new BoxGeometry(Math.abs(xDif), Math.abs(yDif), Math.abs(zDif));
-				setUVs(box, 0, 0, 5, 5, 5, 32, 32);
+				setJsonUVs(box, element.faces);
 				var mesh = new Mesh(box, hatMaterial);
-				mesh.position.x = (xPos+0.5*xDif) / 4;
-				mesh.position.y = (yPos+0.5*yDif) / 4;
-				mesh.position.z = (zPos+0.5*zDif) / 4;
+				mesh.position.x = xPos + 0.5*xDif;
+				mesh.position.y = yPos + 0.5*yDif;
+				mesh.position.z = zPos + 0.5*zDif;
 
 				/*console.log(
 					"Box Dimensions (WHD):", box.parameters.width, box.parameters.height, box.parameters.depth,
@@ -464,8 +493,9 @@ export class PlayerObject extends Group {
 
 		this.hat = new JsonModelObject(hatTexture, hatModel);
 		this.hat.name = "hat";
-		this.hat.position.y = 17;
-		this.hat.position.x = -2;
+		this.hat.position.y = 16.5;
+		this.hat.position.x = -8;
+		this.hat.position.z = -8;
 
 		//this.hat.rotation.x = 10.8 * Math.PI / 180;
 		//this.hat.rotation.y = Math.PI;
