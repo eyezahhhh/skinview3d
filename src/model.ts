@@ -1,5 +1,5 @@
 import { ModelType } from "skinview-utils";
-import { BoxGeometry, BufferAttribute, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, Object3D, Texture, Vector2 } from "three";
+import { BoxGeometry, BufferAttribute, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, Object3D, Texture, Vector2, Vector3 } from "three";
 
 function setUVs(box: BoxGeometry, u: number, v: number, width: number, height: number, depth: number, textureWidth: number, textureHeight: number): void {
 	const toFaceVertices = (x1: number, y1: number, x2: number, y2: number) => [
@@ -325,12 +325,12 @@ export class JsonModelObject extends Group {
 			return x > y ? y : x;
 		}
 
-		console.log("got model", json);
+		//console.log("got model", json);
 
 		if (json && json.elements) {
 			for (var i = 0; i < json.elements.length; i++) {
 				var element = json.elements[i];
-				console.log("found element:", element);
+				//console.log("found element:", element);
 				var xDif = element.to[0] - element.from[0];
 				var yDif = element.to[1] - element.from[1];
 				var zDif = element.to[2] - element.from[2];
@@ -350,6 +350,33 @@ export class JsonModelObject extends Group {
 				mesh.position.y = yPos + 0.5*yDif;
 				mesh.position.z = zPos + 0.5*zDif;
 
+				if (element.rotation != undefined) {
+					let angle: number = element.rotation.angle * Math.PI / 180.0;
+					let axisStr : string = element.rotation.axis;
+					let axis : Vector3;
+					let pivotAny = element.rotation.origin;
+					let pivot : Vector3 = new Vector3(pivotAny[0], pivotAny[1], pivotAny[2]);
+
+					switch (axisStr) {
+					case "x":
+						axis = new Vector3(1, 0, 0);
+						break;
+					case "y":
+						axis = new Vector3(0, 1, 0);
+						break;
+					case "z":
+						axis = new Vector3(0, 0, 1);
+						break;
+					default:
+						axis = new Vector3(0, 0, 0);
+						break;
+					}
+
+					mesh.position.sub(pivot);
+					mesh.position.applyAxisAngle(axis, angle);
+					mesh.position.add(pivot);
+					mesh.rotateOnAxis(axis, angle);
+				}
 				/*console.log(
 					"Box Dimensions (WHD):", box.parameters.width, box.parameters.height, box.parameters.depth,
 					"Mesh Scale: ", mesh.scale.x, mesh.scale.y, mesh.scale.z,
