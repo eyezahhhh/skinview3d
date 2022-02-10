@@ -313,7 +313,7 @@ export class HatObject extends Group {
 				//console.log(xPos, yPos, zPos);
 				console.log(xDif, yDif, zDif);
 				
-				var box = new BoxGeometry(Math.abs(zDif), Math.abs(yDif), Math.abs(zDif));
+				var box = new BoxGeometry(Math.abs(xDif), Math.abs(yDif), Math.abs(zDif));
 				setUVs(box, 0, 0, 5, 5, 5, 32, 32);
 				var mesh = new Mesh(box, hatMaterial);
 				mesh.position.x = xPos / 4;
