@@ -82,7 +82,7 @@ export class BodyPart extends Group {
 export class SkinObject extends Group {
 
 	// body parts
-	readonly head: BodyPart;
+	head: BodyPart;
 	readonly body: BodyPart;
 	readonly rightArm: BodyPart;
 	readonly leftArm: BodyPart;
@@ -308,11 +308,27 @@ export class CapeObject extends Group {
 export class JsonModelObject extends Group {
 	//readonly hat: Mesh;
 
-	constructor(texture: Texture, json: any) {
+	constructor(texture: any, json: any) {
 		super();
 
 		//const elements = json.elements;
 		//if (!elements.length) throw new Error("invalid json model");
+
+		console.log(texture, json);
+
+		/*const hatBox = new BoxGeometry(10, 10, 10);
+		setUVs(hatBox, 0, 0, 5, 5, 5, 32, 32);
+		this.hat = new Mesh(hatBox, hatMaterial);
+		this.hat.position.y = -8;
+		this.hat.position.z = 0.5;
+		this.add(this.hat);*/
+		
+
+		this.updateModel(json, texture);
+	}
+
+	updateModel(json: any, texture: any): void {
+		if (!json || !json.elements) return;
 
 		const hatMaterial = new MeshStandardMaterial({
 			map: texture,
@@ -321,106 +337,80 @@ export class JsonModelObject extends Group {
 			alphaTest: 1e-5
 		});
 
-		function getSmaller(x: any, y: any) {
-			return x > y ? y : x;
-		}
+		for (var i = 0; i < json.elements.length; i++) {
+			var element = json.elements[i];
+			console.log(element);
+			//console.log("found element:", element);
+			var xDif = element.to[0] - element.from[0];
+			var yDif = element.to[1] - element.from[1];
+			var zDif = element.to[2] - element.from[2];
+			var xPos = element.from[0];
+			var yPos = element.from[1];
+			var zPos = element.from[2];
+			//if (xDif < 0) xPos += xDif;
+			//if (yDif < 0) yPos += yDif;
+			//if (zDif < 0) zPos += zDif;
+			//console.log(xPos, yPos, zPos);
+			//console.log("Size: ", xDif, yDif, zDif, " At: ", xPos, yPos, zPos);
+			
+			var box = new BoxGeometry(Math.abs(xDif), Math.abs(yDif), Math.abs(zDif));
+			let hXdif = 0.5*xDif;
+			let hYdif = 0.5*yDif;
+			let hZdif = 0.5*zDif;
+			box.translate(hXdif, hYdif, hZdif); // the box's origin is at the corner.
+			box.translate(xPos, yPos, zPos); // you know what I'm just gonna make the geometry centred at the origin in the bb model
+			setJsonUVs(box, element.faces);
 
-		//console.log("got model", json);
+			var mesh = new Mesh(box, hatMaterial);
 
-		if (json && json.elements) {
-			for (var i = 0; i < json.elements.length; i++) {
-				var element = json.elements[i];
-				//console.log("found element:", element);
-				var xDif = element.to[0] - element.from[0];
-				var yDif = element.to[1] - element.from[1];
-				var zDif = element.to[2] - element.from[2];
-				var xPos = element.from[0];
-				var yPos = element.from[1];
-				var zPos = element.from[2];
-				//if (xDif < 0) xPos += xDif;
-				//if (yDif < 0) yPos += yDif;
-				//if (zDif < 0) zPos += zDif;
-				//console.log(xPos, yPos, zPos);
-				//console.log("Size: ", xDif, yDif, zDif, " At: ", xPos, yPos, zPos);
-				
-				var box = new BoxGeometry(Math.abs(xDif), Math.abs(yDif), Math.abs(zDif));
-				let hXdif = 0.5*xDif;
-				let hYdif = 0.5*yDif;
-				let hZdif = 0.5*zDif;
-				box.translate(hXdif, hYdif, hZdif); // the box's origin is at the corner.
-				box.translate(xPos, yPos, zPos); // you know what I'm just gonna make the geometry centred at the origin in the bb model
-				setJsonUVs(box, element.faces);
+			if (element.rotation != undefined) {
+				console.log(element.name, " At Rotation ", element.rotation);
+				let angle: number = element.rotation.angle * Math.PI / 180.0;
+				let axisStr : string = element.rotation.axis;
+				let axis : Vector3;
+				let pivotAny = element.rotation.origin;
+				let pivot : Vector3 = new Vector3(pivotAny[0], pivotAny[1], pivotAny[2]);
 
-				var mesh = new Mesh(box, hatMaterial);
-
-				/*mesh.position.x = xPos + hXdif;
-				mesh.position.y = yPos + hYdif;
-				mesh.position.z = zPos + hZdif;*/
-
-				/*mesh.position.x = xPos;
-				mesh.position.y = yPos;
-				mesh.position.z = zPos;
-
-				/*mesh.position.x += 0.5*xDif;
-				mesh.position.y += 0.5*yDif;
-				mesh.position.z += 0.5*zDif;*/
-
-				if (element.rotation != undefined) {
-					console.log(element.name, " At Rotation ", element.rotation);
-					let angle: number = element.rotation.angle * Math.PI / 180.0;
-					let axisStr : string = element.rotation.axis;
-					let axis : Vector3;
-					let pivotAny = element.rotation.origin;
-					let pivot : Vector3 = new Vector3(pivotAny[0], pivotAny[1], pivotAny[2]);
-
-					switch (axisStr) {
-					case "x":
-						axis = new Vector3(1, 0, 0);
-						break;
-					case "y":
-						axis = new Vector3(0, 1, 0);
-						break;
-					case "z":
-						axis = new Vector3(0, 0, 1);
-						break;
-					default:
-						axis = new Vector3(0, 0, 0);
-						break;
-					}
-
-					mesh.position.sub(pivot);
-					mesh.position.applyAxisAngle(axis, angle);
-					mesh.position.add(pivot);
-					
-					mesh.rotateOnAxis(axis, angle);
-
-					// if this is `angle` it's in the right place. if this is `-angle` it has the right rotation. total spain. therefore this monstrosity:
-					// mesh.rotateOnAxis(axis, angle);
-					// let cachedPos: Vector3 = new Vector3().copy(mesh.position);
-					// mesh.rotateOnAxis(axis, -2 * angle);
-					// mesh.position.copy(cachedPos);
-					// console.log("CP ", cachedPos, "MP ", mesh.position);
-
-					/*mesh.matrix.multiply(new Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z));
-					mesh.matrix.multiply(new Matrix4().makeRotationAxis(axis, angle));
-					mesh.matrix.multiply(new Matrix4().makeTranslation(pivot.x, pivot.y, pivot.z));*/
+				switch (axisStr) {
+				case "x":
+					axis = new Vector3(1, 0, 0);
+					break;
+				case "y":
+					axis = new Vector3(0, 1, 0);
+					break;
+				case "z":
+					axis = new Vector3(0, 0, 1);
+					break;
+				default:
+					axis = new Vector3(0, 0, 0);
+					break;
 				}
 
-				/*console.log(
-					"Box Dimensions (WHD):", box.parameters.width, box.parameters.height, box.parameters.depth,
-					"Mesh Scale: ", mesh.scale.x, mesh.scale.y, mesh.scale.z,
-					" At: ", mesh.position.x, mesh.position.y, mesh.position.z);*/
+				mesh.position.sub(pivot);
+				mesh.position.applyAxisAngle(axis, angle);
+				mesh.position.add(pivot);
 				
-				this.add(mesh);
-			}
-		}
+				mesh.rotateOnAxis(axis, angle);
 
-		/*const hatBox = new BoxGeometry(10, 10, 10);
-		setUVs(hatBox, 0, 0, 5, 5, 5, 32, 32);
-		this.hat = new Mesh(hatBox, hatMaterial);
-		this.hat.position.y = -8;
-		this.hat.position.z = 0.5;
-		this.add(this.hat);*/
+				// if this is `angle` it's in the right place. if this is `-angle` it has the right rotation. total spain. therefore this monstrosity:
+				// mesh.rotateOnAxis(axis, angle);
+				// let cachedPos: Vector3 = new Vector3().copy(mesh.position);
+				// mesh.rotateOnAxis(axis, -2 * angle);
+				// mesh.position.copy(cachedPos);
+				// console.log("CP ", cachedPos, "MP ", mesh.position);
+
+				/*mesh.matrix.multiply(new Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z));
+				mesh.matrix.multiply(new Matrix4().makeRotationAxis(axis, angle));
+				mesh.matrix.multiply(new Matrix4().makeTranslation(pivot.x, pivot.y, pivot.z));*/
+			}
+
+			/*console.log(
+				"Box Dimensions (WHD):", box.parameters.width, box.parameters.height, box.parameters.depth,
+				"Mesh Scale: ", mesh.scale.x, mesh.scale.y, mesh.scale.z,
+				" At: ", mesh.position.x, mesh.position.y, mesh.position.z);*/
+			
+			this.add(mesh);
+		}
 	}
 }
 
@@ -515,9 +505,33 @@ export class PlayerObject extends Group {
 	readonly cape: CapeObject;
 	readonly elytra: ElytraObject;
 	readonly ears: EarsObject;
-	readonly hat: JsonModelObject;
+	hat: JsonModelObject;
+	hat1: JsonModelObject | null;
+	hat2: JsonModelObject | null;
+	hat3: JsonModelObject | null;
+	hat4: JsonModelObject | null;
+	hat5: JsonModelObject | null;
+	hat6: JsonModelObject | null;
+	hat7: JsonModelObject | null;
+	hat8: JsonModelObject | null;
+	hat9: JsonModelObject | null;
 
-	constructor(skinTexture: Texture, capeTexture: Texture, hatTexture: Texture, hatModel: any, earsTexture: Texture) {
+	
+	shoulderBuddy1: JsonModelObject | null;
+	shoulderBuddy2: JsonModelObject | null;
+	shoulderBuddy3: JsonModelObject | null;
+	shoulderBuddy4: JsonModelObject | null;
+	shoulderBuddy5: JsonModelObject | null;
+	shoulderBuddy6: JsonModelObject | null;
+	shoulderBuddy7: JsonModelObject | null;
+	shoulderBuddy8: JsonModelObject | null;
+	shoulderBuddy9: JsonModelObject | null;
+
+	shoulderBuddy: JsonModelObject;
+	hats: any;
+	shoulderBuddies: any;
+
+	constructor(skinTexture: Texture, capeTexture: Texture, hatTexture: Texture, hatModel: any, shoulderBuddyTexture: Texture, shoulderBuddyModel: any, earsTexture: Texture, hatCanvases: any, shoulderBuddyCanvases: any) {
 		super();
 
 		this.skin = new SkinObject(skinTexture);
@@ -549,13 +563,251 @@ export class PlayerObject extends Group {
 
 		this.hat = new JsonModelObject(hatTexture, hatModel);
 		this.hat.name = "hat";
-		this.hat.position.y = 16.5;
-		this.hat.position.x = -8;
-		this.hat.position.z = -8;
+		this.hat.position.y = 8;
+		this.hat.position.x = 8;
+		this.hat.position.z = 8;
+		this.hat.rotation.y = Math.PI;
+		this.skin.head.add(this.hat);
 
+		this.hat1 = null;
+		this.hat2 = null;
+		this.hat3 = null;
+		this.hat4 = null;
+		this.hat5 = null;
+		this.hat6 = null;
+		this.hat7 = null;
+		this.hat8 = null;
+		this.hat9 = null;
+
+		if (hatCanvases[0] != null) {
+			this.hat1 = new JsonModelObject(hatTexture, hatCanvases[0].model);
+			this.hat1.name = "hat1";
+			this.hat1.position.y = 8;
+			this.hat1.position.x = 8;
+			this.hat1.position.z = 8;
+			this.hat1.rotation.y = Math.PI;
+			this.skin.head.add(this.hat1);
+		}
+
+		if (hatCanvases[1] != null) {
+			this.hat2 = new JsonModelObject(hatTexture, hatCanvases[1].model);
+			this.hat2.name = "hat2";
+			this.hat2.position.y = 8;
+			this.hat2.position.x = 8;
+			this.hat2.position.z = 8;
+			this.hat2.rotation.y = Math.PI;
+			this.skin.head.add(this.hat2);
+		}
+
+		if (hatCanvases[2] != null) {
+			this.hat3 = new JsonModelObject(hatTexture, hatCanvases[2].model);
+			this.hat3.name = "hat3";
+			this.hat3.position.y = 8;
+			this.hat3.position.x = 8;
+			this.hat3.position.z = 8;
+			this.hat3.rotation.y = Math.PI;
+			this.skin.head.add(this.hat3);
+		}
+
+		if (hatCanvases[3] != null) {
+			this.hat4 = new JsonModelObject(hatTexture, hatCanvases[3].model);
+			this.hat4.name = "hat4";
+			this.hat4.position.y = 8;
+			this.hat4.position.x = 8;
+			this.hat4.position.z = 8;
+			this.hat4.rotation.y = Math.PI;
+			this.skin.head.add(this.hat4);
+		}
+
+		if (hatCanvases[4] != null) {
+			this.hat5 = new JsonModelObject(hatTexture, hatCanvases[4].model);
+			this.hat5.name = "hat5";
+			this.hat5.position.y = 8;
+			this.hat5.position.x = 8;
+			this.hat5.position.z = 8;
+			this.hat5.rotation.y = Math.PI;
+			this.skin.head.add(this.hat5);
+		}
+
+		if (hatCanvases[5] != null) {
+			this.hat6 = new JsonModelObject(hatTexture, hatCanvases[5].model);
+			this.hat6.name = "hat6";
+			this.hat6.position.y = 8;
+			this.hat6.position.x = 8;
+			this.hat6.position.z = 8;
+			this.hat6.rotation.y = Math.PI;
+			this.skin.head.add(this.hat6);
+		}
+
+		if (hatCanvases[6] != null) {
+			this.hat7 = new JsonModelObject(hatTexture, hatCanvases[6].model);
+			this.hat7.name = "hat7";
+			this.hat7.position.y = 8;
+			this.hat7.position.x = 8;
+			this.hat7.position.z = 8;
+			this.hat7.rotation.y = Math.PI;
+			this.skin.head.add(this.hat7);
+		}
+
+		if (hatCanvases[7] != null) {
+			this.hat8 = new JsonModelObject(hatTexture, hatCanvases[7].model);
+			this.hat8.name = "hat8";
+			this.hat8.position.y = 8;
+			this.hat8.position.x = 8;
+			this.hat8.position.z = 8;
+			this.hat8.rotation.y = Math.PI;
+			this.skin.head.add(this.hat8);
+		}
+
+		if (hatCanvases[8] != null) {
+			this.hat8 = new JsonModelObject(hatTexture, hatCanvases[8].model);
+			this.hat8.name = "hat8";
+			this.hat8.position.y = 8;
+			this.hat8.position.x = 8;
+			this.hat8.position.z = 8;
+			this.hat8.rotation.y = Math.PI;
+			this.skin.head.add(this.hat8);
+		}
+
+
+
+
+
+		this.shoulderBuddy1 = null;
+		this.shoulderBuddy2 = null;
+		this.shoulderBuddy3 = null;
+		this.shoulderBuddy4 = null;
+		this.shoulderBuddy5 = null;
+		this.shoulderBuddy6 = null;
+		this.shoulderBuddy7 = null;
+		this.shoulderBuddy8 = null;
+		this.shoulderBuddy9 = null;
+
+		if (shoulderBuddyCanvases[0] != null) {
+			this.shoulderBuddy1 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[0].model);
+			this.shoulderBuddy1.name = "shoulderBuddy1";
+			this.shoulderBuddy1.position.y = 7.5;
+			this.shoulderBuddy1.position.x = 13.8;
+			this.shoulderBuddy1.position.z = 8;
+			this.shoulderBuddy1.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy1);
+		}
+
+		if (shoulderBuddyCanvases[1] != null) {
+			this.shoulderBuddy2 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[1].model);
+			this.shoulderBuddy2.name = "shoulderBuddy2";
+			this.shoulderBuddy2.position.y = 7.5;
+			this.shoulderBuddy2.position.x = 13.8;
+			this.shoulderBuddy2.position.z = 8;
+			this.shoulderBuddy2.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy2);
+		}
+
+		if (shoulderBuddyCanvases[2] != null) {
+			this.shoulderBuddy3 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[2].model);
+			this.shoulderBuddy3.name = "shoulderBuddy3";
+			this.shoulderBuddy3.position.y = 7.5;
+			this.shoulderBuddy3.position.x = 13.8;
+			this.shoulderBuddy3.position.z = 8;
+			this.shoulderBuddy3.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy3);
+		}
+
+		if (shoulderBuddyCanvases[3] != null) {
+			this.shoulderBuddy4 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[3].model);
+			this.shoulderBuddy4.name = "shoulderBuddy4";
+			this.shoulderBuddy4.position.y = 7.5;
+			this.shoulderBuddy4.position.x = 13.8;
+			this.shoulderBuddy4.position.z = 8;
+			this.shoulderBuddy4.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy4);
+		}
+
+		if (shoulderBuddyCanvases[4] != null) {
+			this.shoulderBuddy5 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[4].model);
+			this.shoulderBuddy5.name = "shoulderBuddy5";
+			this.shoulderBuddy5.position.y = 7.5;
+			this.shoulderBuddy5.position.x = 13.8;
+			this.shoulderBuddy5.position.z = 8;
+			this.shoulderBuddy5.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy5);
+		}
+
+		if (shoulderBuddyCanvases[5] != null) {
+			this.shoulderBuddy6 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[5].model);
+			this.shoulderBuddy6.name = "shoulderBuddy6";
+			this.shoulderBuddy6.position.y = 7.5;
+			this.shoulderBuddy6.position.x = 13.8;
+			this.shoulderBuddy6.position.z = 8;
+			this.shoulderBuddy6.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy6);
+		}
+
+		if (shoulderBuddyCanvases[6] != null) {
+			this.shoulderBuddy7 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[6].model);
+			this.shoulderBuddy7.name = "shoulderBuddy7";
+			this.shoulderBuddy7.position.y = 7.5;
+			this.shoulderBuddy7.position.x = 13.8;
+			this.shoulderBuddy7.position.z = 8;
+			this.shoulderBuddy7.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy7);
+		}
+
+		if (shoulderBuddyCanvases[7] != null) {
+			this.shoulderBuddy8 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[7].model);
+			this.shoulderBuddy8.name = "shoulderBuddy8";
+			this.shoulderBuddy8.position.y = 7.5;
+			this.shoulderBuddy8.position.x = 13.8;
+			this.shoulderBuddy8.position.z = 8;
+			this.shoulderBuddy8.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy8);
+		}
+
+		if (shoulderBuddyCanvases[8] != null) {
+			this.shoulderBuddy8 = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyCanvases[8].model);
+			this.shoulderBuddy8.name = "shoulderBuddy8";
+			this.shoulderBuddy8.position.y = 7.5;
+			this.shoulderBuddy8.position.x = 13.8;
+			this.shoulderBuddy8.position.z = 8;
+			this.shoulderBuddy8.rotation.y = Math.PI;
+			this.add(this.shoulderBuddy8);
+		}
+
+
+
+
+
+
+		this.shoulderBuddy = new JsonModelObject(shoulderBuddyTexture, shoulderBuddyModel);
+		this.shoulderBuddy.name = "shoulderbuddy";
+		this.shoulderBuddy.position.y = 7.5;
+		this.shoulderBuddy.position.x = 13.8;
+		this.shoulderBuddy.position.z = 8;
 		//this.hat.rotation.x = 10.8 * Math.PI / 180;
-		//this.hat.rotation.y = Math.PI;
-		this.add(this.hat);
+		this.shoulderBuddy.rotation.y = Math.PI;
+		this.add(this.shoulderBuddy);
+		
+		/*this.hats = [];
+		for (var i = 0; i < hatCanvases.length; i++) {
+			this.hats[i] = new JsonModelObject(hatCanvases[i].texture, hatCanvases[i].json);
+			this.hats[i].name = "hat-" + i;
+			this.hats[i].position.y = 7.5;
+			this.hats[i].position.x = 13.8;
+			this.hats[i].position.z = 8;
+			this.hats[i].rotation.y = Math.PI;
+			this.skin.head.add(this.hats[i]);
+		}
+
+		this.shoulderBuddies = [];
+		for (var i = 0; i < shoulderBuddyCanvases.length; i++) {
+			this.shoulderBuddies[0] = new JsonModelObject(shoulderBuddyCanvases[i].texture, shoulderBuddyCanvases[i].json);
+			this.shoulderBuddies[0].name = "hat-" + i;
+			this.shoulderBuddies[0].position.y = 7.5;
+			this.shoulderBuddies[0].position.x = 13.8;
+			this.shoulderBuddies[0].position.z = 8;
+			this.shoulderBuddies[0].rotation.y = Math.PI;
+			this.add(this.shoulderBuddies[0]);
+		}*/
 	}
 
 	get backEquipment(): BackEquipment | null {
@@ -575,5 +827,9 @@ export class PlayerObject extends Group {
 
 	set setHat(value: Texture | null) {
 		this.hat.visible = true;
+	}
+
+	set setShoulderBuddy(value: Texture | null) {
+		this.shoulderBuddy.visible = true;
 	}
 }

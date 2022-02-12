@@ -167,8 +167,11 @@ export const WalkingAnimation: Animation = (player, time) => {
 	skin.rightArm.rotation.z = Math.cos(time + Math.PI) * 0.03 - basicArmRotationZ;
 
 	// Head shaking with different frequency & amplitude
-	skin.head.rotation.y = Math.sin(time / 4) * 0.2;
-	skin.head.rotation.x = Math.sin(time / 5) * 0.1;
+	//skin.head.rotation.y = Math.sin(time / 4) * 0.2;
+	//skin.head.rotation.x = Math.sin(time / 5) * 0.1;
+
+	//player.hat.rotation.y = Math.PI + Math.sin(time / 4) * 0.2;
+	//player.hat.rotation.x = Math.sin(time / 5) * 0.1;
 
 	// Always add an angle for cape around the x axis
 	const basicCapeRotationX = Math.PI * 0.06;
