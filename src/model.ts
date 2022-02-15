@@ -76,7 +76,7 @@ function setJsonUVs(box: BoxGeometry, faceUVs: any) {
 		est[3], est[2], est[0], est[1],
 		wst[3], wst[2], wst[0], wst[1],
 		up[3], up[2], up[0], up[1],
-		down[0], down[1], down[3], down[2],
+		down[3], down[2], down[0], down[1],
 		sth[3], sth[2], sth[0], sth[1],
 		nth[3], nth[2], nth[0], nth[1]
 	]);
