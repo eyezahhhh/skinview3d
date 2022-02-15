@@ -36,22 +36,40 @@ function setCapeUVs(box: BoxGeometry, u: number, v: number, width: number, heigh
 	setUVs(box, u, v, width, height, depth, 64, 32);
 }
 
+function rotateArray<T>(arr: T[], shift: number) {
+	let original: T[] = [...arr];
+
+	for (let i = 0; i < arr.length; ++i) {
+		arr[i] = original[(i + shift) % arr.length];
+	}
+
+	return arr;
+}
+
 function setJsonUVs(box: BoxGeometry, faceUVs: any) {
 	//console.log("FaceUVs: ", faceUVs);
 
-	const toFaceVertices = (uvs: number[]) => [
-		new Vector2(uvs[0] / 16, 1.0 - uvs[3] / 16),
-		new Vector2(uvs[2] / 16, 1.0 - uvs[3] / 16),
-		new Vector2(uvs[2] / 16, 1.0 - uvs[1] / 16),
-		new Vector2(uvs[0] / 16, 1.0 - uvs[1] / 16)
-	];
+	const toFaceVertices = (face: {uv: number[], rotation: number | undefined}) => {
+		let result = [
+			new Vector2(face.uv[0] / 16, 1.0 - face.uv[3] / 16),
+			new Vector2(face.uv[2] / 16, 1.0 - face.uv[3] / 16),
+			new Vector2(face.uv[2] / 16, 1.0 - face.uv[1] / 16),
+			new Vector2(face.uv[0] / 16, 1.0 - face.uv[1] / 16)
+		]
 
-	let nth = toFaceVertices(faceUVs.north.uv);
-	let est = toFaceVertices(faceUVs.east.uv);
-	let sth = toFaceVertices(faceUVs.south.uv);
-	let wst = toFaceVertices(faceUVs.west.uv);
-	let up = toFaceVertices(faceUVs.up.uv);
-	let down = toFaceVertices(faceUVs.down.uv);
+		if (face.rotation == undefined) face.rotation = 0;
+
+		result = rotateArray(result, Math.floor(face.rotation / 90));
+		
+		return result;
+	};
+
+	let nth = toFaceVertices(faceUVs.north);
+	let est = toFaceVertices(faceUVs.east);
+	let sth = toFaceVertices(faceUVs.south);
+	let wst = toFaceVertices(faceUVs.west);
+	let up = toFaceVertices(faceUVs.up);
+	let down = toFaceVertices(faceUVs.down);
 
 	const uvAttr = box.attributes.uv as BufferAttribute;
 	uvAttr.copyVector2sArray([
