@@ -341,7 +341,6 @@ export class JsonModelObject extends Group {
 		//const elements = json.elements;
 		//if (!elements.length) throw new Error("invalid json model");
 
-		console.log(texture, json);
 
 		/*const hatBox = new BoxGeometry(10, 10, 10);
 		setUVs(hatBox, 0, 0, 5, 5, 5, 32, 32);
@@ -366,7 +365,6 @@ export class JsonModelObject extends Group {
 
 		for (var i = 0; i < json.elements.length; i++) {
 			var element = json.elements[i];
-			console.log(element);
 			//console.log("found element:", element);
 			var xDif = element.to[0] - element.from[0];
 			var yDif = element.to[1] - element.from[1];
@@ -391,7 +389,6 @@ export class JsonModelObject extends Group {
 			var mesh = new Mesh(box, hatMaterial);
 
 			if (element.rotation != undefined) {
-				console.log(element.name, " At Rotation ", element.rotation);
 				let angle: number = element.rotation.angle * Math.PI / 180.0;
 				let axisStr : string = element.rotation.axis;
 				let axis : Vector3;

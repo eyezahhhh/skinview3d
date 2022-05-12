@@ -92,6 +92,7 @@ export interface SkinViewerOptions {
 	shoulderBuddy8Model?: any;
 	shoulderBuddy9Texture?: RemoteImage | TextureSource;
 	shoulderBuddy9Model?: any;
+	backEquipment?: BackEquipment | null;
 
 	shoulderBuddyList?: any;
 	hatList?: any;
@@ -214,6 +215,7 @@ export class SkinViewer {
 
 		this.hatModel = options.hatModel;
 
+
 		this.shoulderBuddyCanvas = document.createElement("canvas");
 		this.shoulderBuddyTexture = new Texture(this.shoulderBuddyCanvas);
 		this.shoulderBuddyTexture.magFilter = NearestFilter;
@@ -312,14 +314,16 @@ export class SkinViewer {
 			});
 		}
 		if (options.cape !== undefined) {
-			this.loadCape(options.cape);
+			if (options.backEquipment) {
+				this.loadCape(options.cape, {backEquipment: options.backEquipment});
+			} else {
+				this.loadCape(options.cape);
+			}
 		}
 		if (options.hatTexture !== undefined && options.hatTexture != null) {
-			console.log("CALLED FROM HERE");
 			this.loadHat(options.hatTexture, options.hatModel);
 		}
 		if (options.shoulderBuddyTexture !== undefined) {
-			console.log("sbtexture:", options.shoulderBuddyTexture);
 			this.loadShoulderBuddy(options.shoulderBuddyTexture, options.shoulderBuddyModel);
 		}
 
@@ -467,35 +471,26 @@ export class SkinViewer {
 		source: TextureSource | RemoteImage | null,
 		options: CustomModelOptions = {}
 	): void | Promise<void> {
-		console.log("here, loading hat", options);
+		
 		if (source === null) {
 			this.resetHat();
 
 		} else if (isTextureSource(source)) {
-			console.log("was texture source");
-			console.log(source);
-			console.log(this.capeCanvas);
-			console.log(this.hatCanvas);
-			console.log("using json", this.hatModel);
 			loadCustomModelToCanvas(this.hatCanvas, source);
 			this.hatTexture.needsUpdate = true;
 			this.playerObject.hat.visible = true;
 
-			console.log("finished loading custom hat");
 		} else {
 			return loadImage(source).then(image => this.loadHat(image, options));
 		}
 	}
 
 	setNewHat(source: TextureSource | RemoteImage | null, json: any): void {
-		console.log("set new hat");
 		if (source === null) {
 			this.resetHat();
 		} else if (isTextureSource(source)) {
-			console.log("is texture source");
 			this.hatModel = json;
 			loadCustomModelToCanvas(this.hatCanvas, source);
-			console.log("it is done 2");
 		} else {
 			loadImage(source).then(image => this.setNewHat(image, json));
 		}
@@ -510,28 +505,21 @@ export class SkinViewer {
 		i: any,
 		options: CustomModelOptions = {}
 	): void | Promise<void> {
-		console.log("here, loading hat", options);
 		//this.resetAllHats();
 		if (source === null) return;
 
 		if (isTextureSource(source)) {
-			console.log("was texture source");
-			console.log(source);
-			console.log(this.capeCanvas);
-			console.log(this.hatCanvas);
 			//this.hatModel = json;
 			loadCustomModelToCanvas(this.hatCanvases[i].canvas, source);
 			this.hatTexture.needsUpdate = true;
 			this.playerObject.hats[i].visible = true;
 
-			console.log("finished loading custom hat");
 		} else {
 			return loadImage(source).then(image => this.loadSpecificHat(image, i, options));
 		}
 	}
 
 	resetAllHats(toShow: any): void {
-		console.log("resetting hats");
 		if (this.playerObject.hat1) this.playerObject.hat1.visible = toShow == 1;
 		if (this.playerObject.hat2) this.playerObject.hat2.visible = toShow == 2;
 		if (this.playerObject.hat3) this.playerObject.hat3.visible = toShow == 3;
@@ -553,19 +541,13 @@ export class SkinViewer {
 		source: TextureSource | RemoteImage | null,
 		options: CustomModelOptions = {}
 	): void | Promise<void> {
-		console.log("here, loading shoulder buddy");
 		if (source === null) {
 			this.resetShoulderBuddy();
 
 		} else if (isTextureSource(source)) {
-			console.log("was texture source");
-			console.log("sb:", source);
-			console.log(this.shoulderBuddyCanvas);
-			console.log("using json", this.shoulderBuddyModel);
 			loadCustomModelToCanvas(this.shoulderBuddyCanvas, source);
 			this.shoulderBuddyTexture.needsUpdate = true;
 			this.playerObject.shoulderBuddy.visible = true;
-			console.log("finished loading custom shoulder buddy");
 		} else {
 			return loadImage(source).then(image => this.loadShoulderBuddy(image, options));
 		}
@@ -576,7 +558,6 @@ export class SkinViewer {
 	}
 
 	resetAllShoulderBuddies(toShow: any): void {
-		console.log("resetting shoulder buddies");
 		if (this.playerObject.shoulderBuddy1) this.playerObject.shoulderBuddy1.visible = toShow == 1;
 		if (this.playerObject.shoulderBuddy2) this.playerObject.shoulderBuddy2.visible = toShow == 2;
 		if (this.playerObject.shoulderBuddy3) this.playerObject.shoulderBuddy3.visible = toShow == 3;
